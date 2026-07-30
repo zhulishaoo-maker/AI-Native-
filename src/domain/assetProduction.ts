@@ -1,11 +1,33 @@
 export type CandidateStatus = 'queued' | 'generating' | 'validating' | 'ready' | 'failed' | 'refining' | 'reviewing' | 'approved'
 
+// AI narration phrases shown during generating/validating states
+export const generatingPhrases = [
+  '正在解读场景与活动信息…',
+  '正在分析品类视觉风格偏好…',
+  '正在调度底图生成智能体…',
+  '正在构建景深与光线参数…',
+  '正在渲染高清商业级画质…',
+]
+export const validatingPhrases = [
+  '正在校验品牌安全区…',
+  '正在检查搜索框压板位置…',
+  '正在比对文案长度规范…',
+  '正在确认主体边距合规…',
+]
+
 export type RuleCheck = {
   id: 'brand-overlay' | 'search-overlay' | 'safe-area' | 'copy-length' | 'dimensions'
   label: string
   detail: string
   passed: boolean
   locked?: boolean
+}
+
+export type CandidateInsight = {
+  strategy: string        // e.g. "冷色调 · 年轻女性"
+  strategyTags: string[]  // chip labels on the card
+  predictedCtr: string    // e.g. "+8.3%"
+  aiRationale: string     // 1-2 sentence explanation shown in inspector
 }
 
 export type CreativeCandidate = {
@@ -19,9 +41,38 @@ export type CreativeCandidate = {
   cta: string
   rules: RuleCheck[]
   error?: string
+  imageUrl?: string
+  insight: CandidateInsight
 }
 
 const titles = ['冰爽开场', '清凉好物', '盛夏焕新', '热爱降温']
+
+const candidateInsights: CandidateInsight[] = [
+  {
+    strategy: '冷色调 · 年轻女性',
+    strategyTags: ['冲击首屏', '情绪感强', '高点击'],
+    predictedCtr: '+8.3%',
+    aiRationale: '冷色调冰感视觉在夏季美妆类目与 18-28 岁女性用户高度共鸣，历史相似创意平均 CTR 高出基线 8.3%，适合开场抓眼球。',
+  },
+  {
+    strategy: '暖橙调 · 全年龄段',
+    strategyTags: ['强转化', '权益清晰', '放量款'],
+    predictedCtr: '+5.1%',
+    aiRationale: '暖橙色系在「好物清单」品类渗透率最高，文案以商品价值为核心可加速决策漏斗，适合主力放量。',
+  },
+  {
+    strategy: '自然绿 · 精致生活',
+    strategyTags: ['品牌调性', '加购率高', '长尾流量'],
+    predictedCtr: '+3.7%',
+    aiRationale: '绿色清新调性强化「天然护肤」认知，对复购用户和加购行为有正向拉动，适合品牌型流量运营。',
+  },
+  {
+    strategy: '深蓝夜感 · 男性用户',
+    strategyTags: ['差异化', '男性护肤', '小众精准'],
+    predictedCtr: '+6.9%',
+    aiRationale: '深蓝夜感风格在男性护肤赛道差异化突出，精准触达 25-35 岁男性用户，预期点击密度高但人群相对窄。',
+  },
+]
 
 export function createCandidateBatch(batchId: string): CreativeCandidate[] {
   return titles.map((title, index) => ({
@@ -34,6 +85,7 @@ export function createCandidateBatch(batchId: string): CreativeCandidate[] {
     subtitle: '清凉一夏，好物即刻拥有',
     cta: '立即抢购',
     rules: createRuleChecks(),
+    insight: candidateInsights[index],
   }))
 }
 
@@ -52,11 +104,15 @@ export function transitionCandidate(candidate: CreativeCandidate, status: Candid
 }
 
 export function failCandidate(candidate: CreativeCandidate, error: string): CreativeCandidate {
-  return { ...candidate, status: 'failed', progress: 68, error }
+  return { ...candidate, status: 'failed', progress: 68, error, imageUrl: undefined }
 }
 
 export function retryCandidate(candidate: CreativeCandidate): CreativeCandidate {
-  return { ...candidate, status: 'generating', progress: 12, version: candidate.version + 1, error: undefined }
+  return { ...candidate, status: 'generating', progress: 12, version: candidate.version + 1, error: undefined, imageUrl: undefined }
+}
+
+export function setImageUrl(candidate: CreativeCandidate, url: string): CreativeCandidate {
+  return { ...candidate, imageUrl: url }
 }
 
 export function updateCandidateCopy(candidate: CreativeCandidate, copy: Pick<CreativeCandidate, 'title' | 'subtitle' | 'cta'>): CreativeCandidate {

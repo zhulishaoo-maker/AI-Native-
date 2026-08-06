@@ -28,6 +28,34 @@ type DistChannel = {
 
 type AgentMsg = { id: string; text: string; type: 'action' | 'done' | 'block' }
 
+// 每个 ASSET 对应一个触点规范，带真实尺寸和专属 prompt 要求
+const ASSET_SPECS = [
+  {
+    touchpoint: '开屏',
+    sizeKey: '750×1624',   // 对应 JD_CHANNEL_SPECS 键
+    ratioKey: '9:21.6',
+    prompt: '京喜开屏广告，竖屏9:21比例，750x1624像素，全屏沉浸式视觉冲击，顶部留品牌压板安全区，底部留搜索框安全区，中央大面积视觉主体',
+    brandOverlay: true,
+    searchBar: true,
+  },
+  {
+    touchpoint: 'Banner / 资源位',
+    sizeKey: '1920×1080',
+    ratioKey: '16:9',
+    prompt: '京喜Banner广告横版，16:9比例，1920x1080像素，横版构图，左侧产品主体右侧权益文案，品牌压板在左上角',
+    brandOverlay: true,
+    searchBar: false,
+  },
+  {
+    touchpoint: '营销海报',
+    sizeKey: '750×1000',
+    ratioKey: '3:4',
+    prompt: '京喜营销海报，3:4竖版比例，750x1000像素，营销海报构图，主视觉产品居中，权益信息突出，品牌感强',
+    brandOverlay: true,
+    searchBar: true,
+  },
+]
+
 const TOUCHPOINTS: Touchpoint[] = [
   { id: 'splash',  label: '开屏',           size: '750×1624',  count: 3, status: 'pending', icon: '📱' },
   { id: 'banner',  label: 'Banner / 资源位', size: '1920×1080', count: 8, status: 'pending', icon: '🖼' },
@@ -36,9 +64,9 @@ const TOUCHPOINTS: Touchpoint[] = [
 ]
 
 const ASSETS: Asset[] = [
-  { id: 'a1', index: 0, category: '化妆品', visual: '冰蓝玻璃质感 + 水滴冰晶', colorA: '#52b8d8', colorB: '#0c4a70', approved: false, rules: createRuleChecks() },
-  { id: 'a2', index: 1, category: '3C 数码', visual: '深蓝科技感 + 极光流光', colorA: '#4858c8', colorB: '#080e38', approved: false, rules: createRuleChecks() },
-  { id: 'a3', index: 2, category: '服饰', visual: '薄荷清新 + 自然感', colorA: '#3cb87a', colorB: '#0c3c24', approved: false, rules: createRuleChecks() },
+  { id: 'a1', index: 0, category: '开屏',           visual: '全屏沉浸式 · 冰蓝冰晶感', colorA: '#52b8d8', colorB: '#0c4a70', approved: false, rules: createRuleChecks() },
+  { id: 'a2', index: 1, category: 'Banner',         visual: '横版大气 · 深蓝科技感',   colorA: '#4858c8', colorB: '#080e38', approved: false, rules: createRuleChecks() },
+  { id: 'a3', index: 2, category: '营销海报',        visual: '竖版海报 · 薄荷清新感',   colorA: '#3cb87a', colorB: '#0c3c24', approved: false, rules: createRuleChecks() },
 ]
 
 const INSIGHTS = [
@@ -169,9 +197,13 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
           }, 400)
           ticks.push(tick)
 
-          const prompt = `清凉季夏日营销海报，${asset.category}，${asset.visual}，满300减50权益，高清商业级广告图，3:4竖版，品牌风格简洁大气`
+          const spec = ASSET_SPECS[i]
           const refImageUrl = brief?.referenceImages?.[0]?.dataUrl
-          const result = await generateImage(prompt, undefined, abortController.signal, refImageUrl)
+          // Build prompt: spec-specific + brief context + reference hint
+          const basePrompt = brief
+            ? `${spec.prompt}，活动主题「${brief.campaign}」，主推${brief.category}，核心权益「${brief.benefit}」，视觉风格${brief.style}${refImageUrl ? '，严格参照参考图的色彩构图风格' : ''}`
+            : `${spec.prompt}，清凉季活动，满300减50权益，清透冰感风格`
+          const result = await generateImage(basePrompt, undefined, abortController.signal, refImageUrl)
           window.clearInterval(tick)
           if (cancelled) return
           if (!result.ok) console.error(`[image gen] asset ${i} failed:`, result.error)
@@ -185,13 +217,12 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
             : a
           ))
 
-          // Compose brand overlay + search bar on top of generated image
+          // Compose brand overlay + search bar 按该触点规范决定是否叠加
           if (result.ok && result.url && !cancelled) {
             try {
               const composedUrl = await composeOverlays(result.url, {
-                brandOverlay: true,
-                searchBar: true,
-                // 如果有真实压板图，传入
+                brandOverlay: spec.brandOverlay,
+                searchBar: spec.searchBar,
                 brandOverlayUrl: '/brand-overlay.png',
                 searchBarUrl: '/search-bar.png',
               })
@@ -201,15 +232,15 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
             }
           }
 
-          // Run full JD brand spec validation
+          // Run JD brand spec validation 按该触点的规范尺寸校验
           if (result.ok && result.url && !cancelled) {
             const validationResults = await validateJDSpecs(
               result.url,
-              ratioKey,
-              titleForValidation,
+              spec.sizeKey,
+              asset.category,
               '立即抢购',
-              true,
-              true,
+              spec.brandOverlay,
+              spec.searchBar,
             )
             if (!cancelled) {
               setAssets(p => p.map((a, j) => j === i ? {

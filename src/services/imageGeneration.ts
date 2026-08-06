@@ -12,17 +12,22 @@ export async function generateImage(
   referenceImageDataUrl?: string,
 ): Promise<GenerateImageResult> {
   try {
-    const body: Record<string, unknown> = { model: MODEL, prompt }
+    // If reference image provided, use /edits endpoint (image-to-image)
+    // Otherwise use /generations endpoint (text-to-image)
+    const endpoint = referenceImageDataUrl
+      ? '/api/images/edits'
+      : '/api/images/generations'
 
-    // If reference image provided, add it to the request
-    // Try both common parameter names for multimodal APIs
+    const body: Record<string, unknown> = { model: MODEL, prompt }
     if (referenceImageDataUrl) {
-      body.image = referenceImageDataUrl
-      body.reference_image = referenceImageDataUrl
-      body.init_image = referenceImageDataUrl
+      // Extract pure base64 (strip data URL prefix if present)
+      const base64 = referenceImageDataUrl.includes(',')
+        ? referenceImageDataUrl.split(',')[1]
+        : referenceImageDataUrl
+      body.image = [base64]
     }
 
-    const res = await fetch('/api/images/generations', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -191,8 +191,9 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
               const composedUrl = await composeOverlays(result.url, {
                 brandOverlay: true,
                 searchBar: true,
-                width: 750,
-                height: 1000,
+                // 如果有真实压板图，传入
+                brandOverlayUrl: '/brand-overlay.png',
+                searchBarUrl: '/search-bar.png',
               })
               setAssets(p => p.map((a, j) => j === i ? { ...a, imageUrl: composedUrl } : a))
             } catch (err) {

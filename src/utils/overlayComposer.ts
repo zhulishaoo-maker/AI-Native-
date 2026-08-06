@@ -2,162 +2,136 @@
 // 在生成的素材上叠加品牌压板、搜索框等规范元素
 
 export type OverlayConfig = {
-  brandOverlay?: boolean    // 是否叠加品牌压板
-  searchBar?: boolean       // 是否叠加搜索框
-  width: number
-  height: number
+  brandOverlay?: boolean   // 是否叠加品牌压板
+  searchBar?: boolean      // 是否叠加搜索框
+  brandOverlayUrl?: string // 自定义品牌压板图片 URL
+  searchBarUrl?: string    // 自定义搜索框图片 URL
 }
 
 /**
- * 在 Canvas 上合成品牌压板和搜索框
- * @param baseImageUrl 基础生成的图片 URL 或 data URL
- * @param config 压板配置
- * @returns 合成后的 data URL
+ * 在生成图片上叠加品牌压板和搜索框
+ * 保持图片原始分辨率，不做拉伸
  */
 export async function composeOverlays(
   baseImageUrl: string,
   config: OverlayConfig
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas')
-    canvas.width = config.width
-    canvas.height = config.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      reject(new Error('无法创建 Canvas context'))
-      return
-    }
-
-    // 1. 加载并绘制基础图
     const baseImg = new window.Image()
     baseImg.crossOrigin = 'anonymous'
     baseImg.onload = async () => {
-      ctx.drawImage(baseImg, 0, 0, config.width, config.height)
+      const W = baseImg.naturalWidth
+      const H = baseImg.naturalHeight
 
-      // 2. 叠加品牌压板（顶部）
+      const canvas = document.createElement('canvas')
+      canvas.width = W
+      canvas.height = H
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('Canvas unavailable')); return }
+
+      // 1. 画原图（不拉伸）
+      ctx.drawImage(baseImg, 0, 0, W, H)
+
+      // 2. 品牌压板（顶部）
       if (config.brandOverlay) {
         try {
-          await drawBrandOverlay(ctx, config.width, config.height)
-        } catch (err) {
-          console.warn('[overlay] 品牌压板加载失败，跳过', err)
+          if (config.brandOverlayUrl) {
+            // 用真实压板图片
+            const overlay = await loadImage(config.brandOverlayUrl)
+            // 按宽度撑满，高度等比
+            const overlayH = Math.round(overlay.naturalHeight * (W / overlay.naturalWidth))
+            ctx.drawImage(overlay, 0, 0, W, overlayH)
+          } else {
+            // fallback：纯色条 + 文字
+            drawFallbackBrandOverlay(ctx, W, H)
+          }
+        } catch {
+          drawFallbackBrandOverlay(ctx, W, H)
         }
       }
 
-      // 3. 叠加搜索框（底部）
+      // 3. 搜索框（底部）
       if (config.searchBar) {
         try {
-          await drawSearchBar(ctx, config.width, config.height)
-        } catch (err) {
-          console.warn('[overlay] 搜索框加载失败，跳过', err)
+          if (config.searchBarUrl) {
+            const overlay = await loadImage(config.searchBarUrl)
+            const overlayH = Math.round(overlay.naturalHeight * (W / overlay.naturalWidth))
+            ctx.drawImage(overlay, 0, H - overlayH, W, overlayH)
+          } else {
+            // fallback：白色搜索条
+            drawFallbackSearchBar(ctx, W, H)
+          }
+        } catch {
+          drawFallbackSearchBar(ctx, W, H)
         }
       }
 
-      // 4. 输出最终合成图
       resolve(canvas.toDataURL('image/png'))
     }
-    baseImg.onerror = () => reject(new Error('基础图片加载失败'))
+    baseImg.onerror = () => reject(new Error('图片加载失败'))
     baseImg.src = baseImageUrl
   })
 }
 
-/**
- * 绘制京东品牌压板（顶部红色条带 + Logo）
- */
-async function drawBrandOverlay(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): Promise<void> {
-  // 品牌压板高度约占图片高度的 8-10%
-  const overlayHeight = Math.floor(height * 0.09)
+function drawFallbackBrandOverlay(ctx: CanvasRenderingContext2D, W: number, H: number) {
+  const barH = Math.round(H * 0.08)
+  ctx.fillStyle = '#E1251B'  // 京东红
+  ctx.fillRect(0, 0, W, barH)
 
-  // 绘制红色背景条
-  ctx.fillStyle = '#e52b21'  // 京东红
-  ctx.fillRect(0, 0, width, overlayHeight)
-
-  // 尝试加载 Logo 并绘制（如果有的话）
-  try {
-    const logo = await loadImage('/logo.png')
-    const logoHeight = overlayHeight * 0.6
-    const logoWidth = logo.width * (logoHeight / logo.height)
-    const logoX = 20
-    const logoY = (overlayHeight - logoHeight) / 2
-    ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight)
-  } catch {
-    // Logo 加载失败，用文字替代
-    ctx.fillStyle = '#ffffff'
-    ctx.font = `bold ${overlayHeight * 0.5}px "Noto Sans SC", sans-serif`
-    ctx.textBaseline = 'middle'
-    ctx.fillText('京东 618', 20, overlayHeight / 2)
-  }
-
-  // 右侧活动标签
+  // 白色 "京东" 文字
   ctx.fillStyle = '#ffffff'
-  ctx.font = `${overlayHeight * 0.35}px "Noto Sans SC", sans-serif`
+  const fontSize = Math.round(barH * 0.52)
+  ctx.font = `700 ${fontSize}px "Noto Sans SC", sans-serif`
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'left'
+  ctx.fillText('京东 618', Math.round(W * 0.04), barH / 2)
+
+  // 右侧活动名
   ctx.textAlign = 'right'
-  ctx.fillText('清凉季', width - 20, overlayHeight / 2)
+  ctx.font = `500 ${Math.round(fontSize * 0.8)}px "Noto Sans SC", sans-serif`
+  ctx.fillText('又好又便宜', W - Math.round(W * 0.04), barH / 2)
 }
 
-/**
- * 绘制搜索框压板（底部白色搜索条）
- */
-async function drawSearchBar(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): Promise<void> {
-  const barHeight = Math.floor(height * 0.07)
-  const barY = height - barHeight - 20  // 距离底部 20px
+function drawFallbackSearchBar(ctx: CanvasRenderingContext2D, W: number, H: number) {
+  const barH = Math.round(H * 0.065)
+  const barY = H - barH - Math.round(H * 0.02)
+  const mx = Math.round(W * 0.04)   // horizontal margin
+  const r = barH / 2
 
-  // 半透明白色背景
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
-  ctx.shadowBlur = 8
+  // 白色圆角矩形
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.15)'
+  ctx.shadowBlur = 6
   ctx.shadowOffsetY = 2
+  ctx.fillStyle = 'rgba(255,255,255,0.95)'
+  roundRect(ctx, mx, barY, W - mx * 2, barH, r)
+  ctx.fill()
+  ctx.restore()
 
-  // 绘制圆角矩形搜索框
-  const padding = 15
-  const radius = barHeight / 2
-  roundRect(ctx, padding, barY, width - padding * 2, barHeight, radius)
+  // 红色搜索按钮
+  const btnW = Math.round(W * 0.18)
+  const btnX = W - mx - btnW
+  ctx.fillStyle = '#E1251B'
+  roundRect(ctx, btnX, barY, btnW, barH, r)
   ctx.fill()
 
-  // 重置阴影
-  ctx.shadowColor = 'transparent'
-  ctx.shadowBlur = 0
-  ctx.shadowOffsetY = 0
-
-  // 搜索图标（简化版放大镜）
-  ctx.strokeStyle = '#999'
-  ctx.lineWidth = 2
-  const iconX = padding + 20
-  const iconY = barY + barHeight / 2
-  const iconRadius = barHeight * 0.25
-  ctx.beginPath()
-  ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(iconX + iconRadius * 0.7, iconY + iconRadius * 0.7)
-  ctx.lineTo(iconX + iconRadius * 1.4, iconY + iconRadius * 1.4)
-  ctx.stroke()
-
-  // 搜索提示文字
-  ctx.fillStyle = '#999'
-  ctx.font = `${barHeight * 0.35}px "Noto Sans SC", sans-serif`
-  ctx.textAlign = 'left'
+  ctx.fillStyle = '#fff'
+  const fs = Math.round(barH * 0.4)
+  ctx.font = `600 ${fs}px "Noto Sans SC", sans-serif`
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('搜索商品', iconX + 30, barY + barHeight / 2)
+  ctx.fillText('搜索', btnX + btnW / 2, barY + barH / 2)
+
+  // 搜索框文字
+  ctx.fillStyle = '#aaa'
+  ctx.font = `400 ${fs}px "Noto Sans SC", sans-serif`
+  ctx.textAlign = 'left'
+  ctx.fillText('京东搜一搜', mx + r + 8, barY + barH / 2)
 }
 
-/**
- * 绘制圆角矩形
- */
 function roundRect(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
+  x: number, y: number, w: number, h: number, r: number
 ) {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
@@ -172,9 +146,6 @@ function roundRect(
   ctx.closePath()
 }
 
-/**
- * 辅助函数：加载图片
- */
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image()

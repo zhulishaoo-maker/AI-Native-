@@ -3,6 +3,7 @@ import { ArrowLeft, Check, ChevronDown, Download, Edit3, Image, LockKeyhole, Max
 import { generateImage } from '../services/imageGeneration'
 import { createRuleChecks, type RuleCheck } from '../domain/assetProduction'
 import { validateJDSpecs } from '../utils/jdBrandSpec'
+import { composeOverlays } from '../utils/overlayComposer'
 import type { GenerationBrief } from '../domain/generationBrief'
 
 type Phase = 'brief' | 'planning' | 'generating' | 'complete' | 'auto_reviewing' | 'distributing' | 'distributed'
@@ -183,6 +184,21 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
             ? { ...a, imageUrl: result.ok ? result.url : undefined, genError: result.ok ? undefined : result.error, progress: undefined }
             : a
           ))
+
+          // Compose brand overlay + search bar on top of generated image
+          if (result.ok && result.url && !cancelled) {
+            try {
+              const composedUrl = await composeOverlays(result.url, {
+                brandOverlay: true,
+                searchBar: true,
+                width: 750,
+                height: 1000,
+              })
+              setAssets(p => p.map((a, j) => j === i ? { ...a, imageUrl: composedUrl } : a))
+            } catch (err) {
+              console.warn('[overlay] 压板合成失败，使用原图', err)
+            }
+          }
 
           // Run full JD brand spec validation
           if (result.ok && result.url && !cancelled) {

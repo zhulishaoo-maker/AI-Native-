@@ -254,18 +254,7 @@ export function App() {
               <h1 className="home-hero-title">今天想创造什么？</h1>
             </div>
             <div className="home-mascot">
-              <div className="home-mascot-figure">
-                <div className="mascot-body">
-                  <div className="mascot-head">
-                    <div className="mascot-eye left" /><div className="mascot-eye right" />
-                    <div className="mascot-snout" />
-                  </div>
-                  <div className="mascot-torso">
-                    <div className="mascot-tie" />
-                  </div>
-                </div>
-                <div className="mascot-mug">JOY</div>
-              </div>
+              <img src="/joy.png" alt="JoyBuilder" className="home-mascot-img" />
             </div>
           </div>
 
@@ -307,7 +296,10 @@ export function App() {
                 '为清凉季设计10张单品海报，商品分别@sku@sku@sku@sku@sku@sku@sku@sku@sku@sku',
                 '为京喜618延展10个分会场，分别是美妆，3c，服饰，生鲜，居家，建材…',
               ].map((tpl) => (
-                <button key={tpl} className="home-template-card" onClick={() => setComposer({ ...composer })}>
+                <button key={tpl} className="home-template-card" onClick={() => {
+                  // Fill the prompt sentence campaign field with the template text
+                  setComposer({ ...composer, campaign: tpl.slice(0, 12) })
+                }}>
                   {tpl}
                 </button>
               ))}
@@ -341,24 +333,7 @@ function AppHeader({ view, setView }: { view: AppView; setView: (v: AppView) => 
     <aside className="app-sidebar">
       {/* Brand */}
       <button className="sidebar-brand" onClick={() => setView('home')}>
-        <div className="sidebar-brand-icon">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            {/* Dog face */}
-            <ellipse cx="11" cy="11.5" rx="8" ry="7" fill="white" opacity="0.95"/>
-            <ellipse cx="8" cy="10" rx="2" ry="2" fill="#1a1d23"/>
-            <ellipse cx="14" cy="10" rx="2" ry="2" fill="#1a1d23"/>
-            <ellipse cx="8.7" cy="9.3" rx=".7" ry=".7" fill="white"/>
-            <ellipse cx="14.7" cy="9.3" rx=".7" ry=".7" fill="white"/>
-            <ellipse cx="11" cy="13" rx="3" ry="2" fill="#f5d0b0"/>
-            <path d="M9.5 13.8 Q11 15 12.5 13.8" stroke="#c07050" strokeWidth="1" fill="none" strokeLinecap="round"/>
-            <ellipse cx="6" cy="7" rx="2.5" ry="1.8" fill="white" opacity="0.9"/>
-            <ellipse cx="16" cy="7" rx="2.5" ry="1.8" fill="white" opacity="0.9"/>
-          </svg>
-        </div>
-        <div className="sidebar-brand-text">
-          <strong><span className="brand-joy">Joy</span><span className="brand-builder">Builder</span></strong>
-          <small>AI Native 电商营销运营平台</small>
-        </div>
+        <img src="/logo.png" alt="JoyBuilder" className="sidebar-logo-img" />
       </button>
 
       {/* Main nav */}
@@ -391,17 +366,8 @@ function AppHeader({ view, setView }: { view: AppView; setView: (v: AppView) => 
         </div>
       </div>
 
-      {/* Bottom: credits + user */}
+      {/* Bottom: user */}
       <div className="sidebar-bottom">
-        <div className="sidebar-credits">
-          <Sparkles size={13} />
-          <div>
-            <span>Credits</span>
-            <div className="sidebar-credits-bar"><div className="sidebar-credits-fill" style={{ width: '85%' }} /></div>
-          </div>
-          <strong>848 / 1,000</strong>
-        </div>
-        <button className="sidebar-upgrade-btn">升级套餐</button>
         <div className="sidebar-user">
           <div className="sidebar-avatar">L</div>
           <div className="sidebar-user-info">
@@ -468,7 +434,7 @@ function ResultsView({ brief, onBack, onVenue, onArchive, onGoAssets }: { brief:
 
         const candidateTitle = ['冰爽开场', '清凉好物', '盛夏焕新', '热爱降温'][index]
         const imagePrompt = `${brief.prompt}，方案主题：${candidateTitle}，高清营销广告图，纯净背景，商业级画质`
-        const result = await generateImage(imagePrompt, brief.ratio)
+        const result = await generateImage(imagePrompt, brief.ratio, controller.signal)
         if (controller.signal.aborted) return
 
         if (result.ok) {
@@ -631,7 +597,12 @@ function AssetCenterView({ assets, onBack, onDistribute }: { assets: ArchivedAss
       </div>
       <div className="production-layout">
         <div className="candidate-gallery">
-          {assets.map((asset, i) => (
+          {assets.filter(asset => {
+            if (filter === 'all') return true
+            if (filter === 'approved') return true  // all archived are approved
+            if (filter === 'reuse') return asset.insight.predictedCtr.startsWith('+')
+            return true
+          }).map((asset, i) => (
             <button key={asset.id} className={`creative-card ${variantClass[i % 4]} status-approved ${selectedId === asset.id ? 'selected' : ''}`} onClick={() => setSelectedId(asset.id)}>
               {asset.imageUrl
                 ? <img className="asset-image" src={asset.imageUrl} alt={asset.title} />
@@ -674,14 +645,19 @@ function useLiveMetrics(intervalMs = 2500) {
 
   useEffect(() => {
     const id = window.setInterval(() => {
+      // Compute next outside updater to avoid side effects inside setState
       setMetrics((prev) => {
         const next = tickMetrics(prev, boostedRef.current)
-        setQuality(detectAnomaly(next))
         return next
       })
     }, intervalMs)
     return () => window.clearInterval(id)
   }, [intervalMs])
+
+  // Sync quality from metrics changes via a separate effect
+  useEffect(() => {
+    setQuality(detectAnomaly(metrics))
+  }, [metrics])
 
   const boost = () => { boostedRef.current = true; window.setTimeout(() => { boostedRef.current = false }, 12000) }
 

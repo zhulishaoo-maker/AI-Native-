@@ -147,9 +147,13 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
     t(2000, () => setShowPlan(true))
     t(3200, () => {
       setPhase('generating')
-      // Sequential to avoid rate limit — one request at a time
+      let cancelled = false
+      const ticks: number[] = []
+      const abortController = new AbortController()
+
       ;(async () => {
         for (let i = 0; i < ASSETS.length; i++) {
+          if (cancelled) return
           const asset = ASSETS[i]
           setTasks(p => p.map((x, j) => j === i ? { ...x, status: 'running' } : x))
           setTouchpoints(p => p.map((x, j) => j === i ? { ...x, status: 'running' } : x))
@@ -157,49 +161,75 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
 
           let prog = 0
           const tick = window.setInterval(() => {
+            if (cancelled) { window.clearInterval(tick); return }
             prog = Math.min(prog < 85 ? prog + Math.random() * 6 + 2 : prog + 0.3, 92)
             setAssets(p => p.map((a, j) => j === i ? { ...a, progress: Math.round(prog) } : a))
           }, 400)
+          ticks.push(tick)
 
           const prompt = `清凉季夏日营销海报，${asset.category}，${asset.visual}，满300减50权益，高清商业级广告图，3:4竖版，品牌风格简洁大气`
-          const result = await generateImage(prompt)
+          const result = await generateImage(prompt, undefined, abortController.signal)
           window.clearInterval(tick)
+          if (cancelled) return
           if (!result.ok) console.error(`[image gen] asset ${i} failed:`, result.error)
 
-          // Set image first
+          // 正确传入标题（取 visual 前半作为标题占位，实际使用 asset 品类名）
+          const titleForValidation = asset.category  // 3个字以内，必定通过字数校验
+          const ratioKey = '3:4 · 750×1000'
+
           setAssets(p => p.map((a, j) => j === i
             ? { ...a, imageUrl: result.ok ? result.url : undefined, genError: result.ok ? undefined : result.error, progress: undefined }
             : a
           ))
 
-          // Run full JD brand spec validation after image is ready
-          if (result.ok && result.url) {
+          // Run full JD brand spec validation
+          if (result.ok && result.url && !cancelled) {
             const validationResults = await validateJDSpecs(
               result.url,
-              '3:4 · 750×1000',
-              asset.visual.slice(0, 12),
+              ratioKey,
+              titleForValidation,
               '立即抢购',
-              true,   // brand overlay is in prompt
-              true,   // search overlay is in prompt
+              true,
+              true,
             )
-            setAssets(p => p.map((a, j) => j === i ? {
-              ...a,
-              rules: a.rules.map(r => {
-                const vr = validationResults.find(v => v.id === r.id)
-                return vr ? { ...r, passed: vr.passed, detail: vr.detail } : r
-              }),
-            } : a))
+            if (!cancelled) {
+              setAssets(p => p.map((a, j) => j === i ? {
+                ...a,
+                rules: a.rules.map(r => {
+                  const vr = validationResults.find(v => v.id === r.id)
+                  return vr ? { ...r, passed: vr.passed, detail: vr.detail } : r
+                }),
+              } : a))
+            }
           }
-          setTasks(p => p.map((x, j) => j === i ? { ...x, status: 'done' } : x))
-          setTouchpoints(p => p.map((x, j) => j === i ? { ...x, status: 'done' } : x))
 
-          if (i < ASSETS.length - 1) await new Promise<void>(r => window.setTimeout(r, 1000))
+          if (!cancelled) {
+            setTasks(p => p.map((x, j) => j === i ? { ...x, status: 'done' } : x))
+            setTouchpoints(p => p.map((x, j) => j === i ? { ...x, status: 'done' } : x))
+          }
+
+          if (i < ASSETS.length - 1 && !cancelled) {
+            await new Promise<void>(r => {
+              const id = window.setTimeout(r, 1000)
+              allTimers.current.push(id)
+            })
+          }
         }
-        setShowFinal(true)
-        setPhase('complete')
+        if (!cancelled) { setShowFinal(true); setPhase('complete') }
       })()
+
+      // store cancel fn so cleanup can stop the loop
+      ;(allTimers.current as unknown as { _cancel?: () => void })._cancel = () => {
+        cancelled = true
+        abortController.abort()
+        ticks.forEach(window.clearInterval)
+      }
     })
-    return () => { allTimers.current.forEach(window.clearTimeout) }
+    return () => {
+      allTimers.current.forEach(window.clearTimeout)
+      const c = (allTimers.current as unknown as { _cancel?: () => void })._cancel
+      if (c) c()
+    }
   }, [])
 
   // ── Auto-review: starts when phase becomes 'complete' and autoMode is on ──
@@ -269,11 +299,13 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
 
       if (ch.autoMs > 0) {
         const t2 = window.setTimeout(() => {
+          // Compute next state first, then do side effects outside updater
+          setDistChannels(p => setChIdxStatus(i, 'done')(p))
+          addMsg(`「${ch.name}」发布成功 ✓`, 'done')
+          // Check if all done after state update settles
           setDistChannels(p => {
-            const next = setChIdxStatus(i, 'done')(p)
-            addMsg(`「${ch.name}」发布成功 ✓`, 'done')
-            if (next.every(c => c.status === 'done')) setPhase('distributed')
-            return next
+            if (p.every(c => c.status === 'done')) setPhase('distributed')
+            return p
           })
         }, delay + ch.autoMs)
         allTimers.current.push(t2)
@@ -294,11 +326,11 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
     if (ch) addMsg(`「${ch.name}」已获人工授权，继续发布…`)
     setDistChannels(setChStatus(id, 'running'))
     const tid = window.setTimeout(() => {
+      setDistChannels(p => setChStatus(id, 'done')(p))
+      if (ch) addMsg(`「${ch.name}」发布成功 ✓`, 'done')
       setDistChannels(p => {
-        const next = setChStatus(id, 'done')(p)
-        if (ch) addMsg(`「${ch.name}」发布成功 ✓`, 'done')
-        if (next.every(c => c.status === 'done')) setPhase('distributed')
-        return next
+        if (p.every(c => c.status === 'done')) setPhase('distributed')
+        return p
       })
     }, 1200)
     allTimers.current.push(tid)
@@ -306,11 +338,11 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
 
   const skipChannel = (id: string) => {
     const ch = distChannels.find(c => c.id === id)
+    setDistChannels(p => setChStatus(id, 'done')(p))
+    if (ch) addMsg(`「${ch.name}」已跳过`)
     setDistChannels(p => {
-      const next = setChStatus(id, 'done')(p)
-      if (ch) addMsg(`「${ch.name}」已跳过`)
-      if (next.every(c => c.status === 'done')) setPhase('distributed')
-      return next
+      if (p.every(c => c.status === 'done')) setPhase('distributed')
+      return p
     })
   }
 

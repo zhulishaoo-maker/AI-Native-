@@ -31,6 +31,9 @@ function RiskBadge({ tier }: { tier: RiskTier }) {
 function CountdownBar({ ms, onExpire }: { ms: number; onExpire: () => void }) {
   const [remaining, setRemaining] = useState(ms)
   const expiredRef = useRef(false)
+  // stable ref so onExpire identity change never resets the countdown
+  const onExpireRef = useRef(onExpire)
+  useEffect(() => { onExpireRef.current = onExpire }, [onExpire])
 
   useEffect(() => {
     expiredRef.current = false
@@ -41,14 +44,14 @@ function CountdownBar({ ms, onExpire }: { ms: number; onExpire: () => void }) {
         if (next <= 0 && !expiredRef.current) {
           expiredRef.current = true
           window.clearInterval(interval)
-          onExpire()
+          onExpireRef.current()
           return 0
         }
         return Math.max(0, next)
       })
     }, 100)
     return () => window.clearInterval(interval)
-  }, [ms, onExpire])
+  }, [ms])  // only re-run when ms changes, not when onExpire changes
 
   const pct = Math.round((remaining / ms) * 100)
   return (
@@ -158,11 +161,17 @@ function IntentCard({
                 )}
               </>
             )}
-            {intent.status === 'done' && intent.riskTier !== 'high' && (
-              <button className="intent-btn-rollback" onClick={() => onRollback(intent.id)}>
-                <RotateCcw size={13} />回滚此操作
-              </button>
-            )}
+          </div>
+        </div>
+      )}
+
+      {/* Rollback — shown after done, outside the !isDone guard */}
+      {isDone && intent.riskTier !== 'high' && !isRolledBack && (
+        <div className="intent-card-actions">
+          <div className="intent-buttons">
+            <button className="intent-btn-rollback" onClick={() => onRollback(intent.id)}>
+              <RotateCcw size={13} />回滚此操作
+            </button>
           </div>
         </div>
       )}
@@ -208,7 +217,11 @@ export function CampaignWorkspace({ onBack, onVenue }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [activeTouchpoint, setActiveTouchpoint] = useState<string | null>(null)
   const [metricToast, setMetricToast] = useState<{ title: string; delta: string; positive: boolean } | null>(null)
+  const activeIntervals = useRef<number[]>([])
   const currentStage = campaignStages.find((s) => s.id === selectedStage)!
+
+  // Cleanup all intervals on unmount
+  useEffect(() => () => { activeIntervals.current.forEach(window.clearInterval) }, [])
 
   const addLog = (intent: ActionIntent, action: DecisionLogEntry['action'], outcome?: string) => {
     setLog((prev) => [
@@ -246,6 +259,7 @@ export function CampaignWorkspace({ onBack, onVenue }: Props) {
         progress += Math.random() * 18 + 8
         if (progress >= 100) {
           window.clearInterval(interval)
+          activeIntervals.current = activeIntervals.current.filter(id => id !== interval)
           setIntents((prev) => prev.map((i) => i.id === id ? { ...i, status: 'done' as IntentStatus, executingProgress: 100 } : i))
           addLog(intent, intent.riskTier === 'low' ? 'auto_executed' : 'approved', '执行成功，数据回收中')
           const outcome = intentOutcomes[id]
@@ -257,6 +271,7 @@ export function CampaignWorkspace({ onBack, onVenue }: Props) {
           setIntents((prev) => prev.map((i) => i.id === id ? { ...i, executingProgress: Math.round(progress) } : i))
         }
       }, 280)
+      activeIntervals.current.push(interval)
     }
 
     window.setTimeout(startProgress, 200)

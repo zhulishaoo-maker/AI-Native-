@@ -10,6 +10,8 @@ export default defineConfig({
       '/api/images': {
         target: 'http://llm-gw.jd.local',
         changeOrigin: true,
+        timeout: 120000,
+        proxyTimeout: 120000,
         rewrite: (path) => path.replace(/^\/api\/images/, '/v1/images'),
       },
     },

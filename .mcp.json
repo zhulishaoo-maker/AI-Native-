@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zero-design": {
+      "url": "http://127.0.0.1:27618/mcp",
+      "type": "http"
+    }
+  }
+}

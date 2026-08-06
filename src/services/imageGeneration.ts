@@ -20,11 +20,11 @@ export async function generateImage(
 
     const body: Record<string, unknown> = { model: MODEL, prompt }
     if (referenceImageDataUrl) {
-      // Extract pure base64 (strip data URL prefix if present)
-      const base64 = referenceImageDataUrl.includes(',')
-        ? referenceImageDataUrl.split(',')[1]
-        : referenceImageDataUrl
-      body.image = [base64]
+      // API expects full data URL: "data:image/png;base64,..."
+      const dataUrl = referenceImageDataUrl.startsWith('data:')
+        ? referenceImageDataUrl
+        : `data:image/png;base64,${referenceImageDataUrl}`
+      body.image = [dataUrl]
     }
 
     const res = await fetch(endpoint, {

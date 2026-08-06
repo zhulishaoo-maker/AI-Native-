@@ -131,16 +131,27 @@ export function PromptComposer({ value, onChange, onSubmit }: Props) {
     files.forEach(file => {
       const reader = new FileReader()
       reader.onload = (ev) => {
-        const preview = ev.target?.result as string
-        setRefImages(prev => [...prev, { id: `${Date.now()}-${file.name}`, preview, name: file.name }])
+        const dataUrl = ev.target?.result as string
+        const newImg = { id: `${Date.now()}-${Math.random()}`, dataUrl, name: file.name }
+        setRefImages(prev => [...prev, { id: newImg.id, preview: newImg.dataUrl, name: newImg.name }])
+        // Also save to ComposerState so it can be used in generation
+        onChange({
+          ...value,
+          referenceImages: [...(value.referenceImages || []), newImg]
+        })
       }
       reader.readAsDataURL(file)
     })
-    // reset input so same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const removeImage = (id: string) => setRefImages(prev => prev.filter(img => img.id !== id))
+  const removeImage = (id: string) => {
+    setRefImages(prev => prev.filter(img => img.id !== id))
+    onChange({
+      ...value,
+      referenceImages: (value.referenceImages || []).filter(img => img.id !== id)
+    })
+  }
 
   return (
     <section className="prompt-composer" aria-label="生成要求">

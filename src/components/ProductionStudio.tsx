@@ -3,6 +3,7 @@ import { ArrowLeft, Check, ChevronDown, Download, Edit3, Image, LockKeyhole, Max
 import { generateImage } from '../services/imageGeneration'
 import { createRuleChecks, type RuleCheck } from '../domain/assetProduction'
 import { validateJDSpecs } from '../utils/jdBrandSpec'
+import type { GenerationBrief } from '../domain/generationBrief'
 
 type Phase = 'brief' | 'planning' | 'generating' | 'complete' | 'auto_reviewing' | 'distributing' | 'distributed'
 
@@ -110,7 +111,7 @@ function PosterPlaceholder({ asset, generating }: { asset: Asset; generating: bo
   )
 }
 
-export function ProductionStudio({ onComplete, onBack }: { goal: string; onComplete: () => void; onBack: () => void }) {
+export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; brief: GenerationBrief | null; onComplete: () => void; onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>('brief')
   const [showPlan, setShowPlan] = useState(false)
   const [touchpoints, setTouchpoints] = useState<Touchpoint[]>(TOUCHPOINTS)
@@ -168,7 +169,8 @@ export function ProductionStudio({ onComplete, onBack }: { goal: string; onCompl
           ticks.push(tick)
 
           const prompt = `清凉季夏日营销海报，${asset.category}，${asset.visual}，满300减50权益，高清商业级广告图，3:4竖版，品牌风格简洁大气`
-          const result = await generateImage(prompt, undefined, abortController.signal)
+          const refImageUrl = brief?.referenceImages?.[0]?.dataUrl
+          const result = await generateImage(prompt, undefined, abortController.signal, refImageUrl)
           window.clearInterval(tick)
           if (cancelled) return
           if (!result.ok) console.error(`[image gen] asset ${i} failed:`, result.error)

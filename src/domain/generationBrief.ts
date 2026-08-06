@@ -34,6 +34,7 @@ export type ComposerState = {
   searchOverlay: string
   style: string
   ratio: string
+  referenceImages?: Array<{ id: string; dataUrl: string; name: string }>
   promptCopy: PromptCopy
 }
 
@@ -58,7 +59,14 @@ export const defaultComposerState: ComposerState = {
 
 export function composePrompt(state: ComposerState) {
   const copy = state.promptCopy
-  return `${copy.prefix}${state.campaign}${copy.afterCampaign}${state.taskType}${copy.afterTask}${state.category}${copy.afterCategory}${state.benefit}${copy.afterBenefit}${state.brandOverlay}${copy.afterBrandOverlay}${state.searchOverlay}${copy.afterSearchOverlay}${state.style}${copy.afterStyle}${state.ratio}${copy.suffix}`
+  let basePrompt = `${copy.prefix}${state.campaign}${copy.afterCampaign}${state.taskType}${copy.afterTask}${state.category}${copy.afterCategory}${state.benefit}${copy.afterBenefit}${state.brandOverlay}${copy.afterBrandOverlay}${state.searchOverlay}${copy.afterSearchOverlay}${state.style}${copy.afterStyle}${state.ratio}${copy.suffix}`
+
+  // If reference images provided, add strong visual constraints based on reference
+  if (state.referenceImages && state.referenceImages.length > 0) {
+    basePrompt += ` 【参考图约束】：严格参照上传的参考图片进行创作，包括但不限于：构图布局、色彩搭配、主体位置、视觉风格、光影效果、层次关系。保持参考图的整体视觉调性，仅替换产品品类和权益文案，其余视觉元素需高度还原参考图特征。`
+  }
+
+  return basePrompt
 }
 
 export function buildGenerationBrief(state: ComposerState, now = new Date()): GenerationBrief {

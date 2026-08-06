@@ -207,7 +207,7 @@ export function App() {
   if (view === 'studio') return (
     <main className="marketing-shell">
       <AppHeader view={view} setView={setView} />
-      <ProductionStudio goal={campaignGoal} onComplete={() => setView('assets')} onBack={() => setView('home')} />
+      <ProductionStudio goal={campaignGoal} brief={brief} onComplete={() => setView('assets')} onBack={() => setView('home')} />
     </main>
   )
   if (view === 'campaign-plan') return (

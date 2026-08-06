@@ -9,15 +9,26 @@ export async function generateImage(
   prompt: string,
   _ratio?: string,
   signal?: AbortSignal,
+  referenceImageDataUrl?: string,
 ): Promise<GenerateImageResult> {
   try {
+    const body: Record<string, unknown> = { model: MODEL, prompt }
+
+    // If reference image provided, add it to the request
+    // Try both common parameter names for multimodal APIs
+    if (referenceImageDataUrl) {
+      body.image = referenceImageDataUrl
+      body.reference_image = referenceImageDataUrl
+      body.init_image = referenceImageDataUrl
+    }
+
     const res = await fetch('/api/images/generations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${API_KEY}`,
       },
-      body: JSON.stringify({ model: MODEL, prompt }),
+      body: JSON.stringify(body),
       signal,
     })
     if (!res.ok) {

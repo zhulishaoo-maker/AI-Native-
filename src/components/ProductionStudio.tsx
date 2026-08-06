@@ -206,11 +206,7 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
           const result = await generateImage(basePrompt, undefined, abortController.signal, refImageUrl)
           window.clearInterval(tick)
           if (cancelled) return
-          if (!result.ok) console.error(`[image gen] asset ${i} failed:`, result.error)
-
-          // 正确传入标题（取 visual 前半作为标题占位，实际使用 asset 品类名）
-          const titleForValidation = asset.category  // 3个字以内，必定通过字数校验
-          const ratioKey = '3:4 · 750×1000'
+          if (!result.ok) console.error(`[image gen] asset ${i} (${spec.touchpoint}) failed:`, result.error)
 
           setAssets(p => p.map((a, j) => j === i
             ? { ...a, imageUrl: result.ok ? result.url : undefined, genError: result.ok ? undefined : result.error, progress: undefined }

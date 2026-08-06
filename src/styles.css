@@ -49,11 +49,9 @@ body{min-width:1100px;background:#f5f6f8}
 /* ── Sidebar ─────────────────────────────────────────── */
 .app-sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#fff;border-right:1px solid #e4e7ec;display:flex;flex-direction:column;padding:18px 12px 16px;z-index:50;overflow-y:auto}
 
-.sidebar-brand{display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;background:transparent;cursor:pointer;border-radius:10px;text-align:left;margin-bottom:6px}
+.sidebar-brand{display:flex;align-items:center;padding:12px 10px 8px;border:0;background:transparent;cursor:pointer;border-radius:10px;text-align:left;margin-bottom:4px}
 .sidebar-brand:hover{background:#f4f5f7}
-.sidebar-brand-icon{width:34px;height:34px;border-radius:9px;background:#e52b21;display:grid;place-items:center;flex:0 0 auto}
-.sidebar-brand-icon span{font:700 16px 'Unbounded';color:#fff}
-.sidebar-brand-text{display:grid;gap:1px}
+.sidebar-logo-img{width:148px;height:auto;display:block;object-fit:contain}
 .sidebar-brand-text strong{font-size:13px;letter-spacing:-.3px;color:#0f1117}
 .sidebar-brand-text small{font:400 9px 'DM Mono';color:#8b929c;letter-spacing:.3px}
 
@@ -103,16 +101,16 @@ body{min-width:1100px;background:#f5f6f8}
 .creation-home::before,.ambient-orb{display:none!important}
 
 /* Hero: brand name + mascot side by side */
-.home-hero-row{width:min(1100px,92vw);display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;background:#fff;border:1px solid #e4e7ec;border-radius:18px;padding:28px 40px;box-shadow:0 8px 32px #26374a08;min-height:140px}
-.home-hero-text{display:flex;flex-direction:column;gap:10px}
-.home-brand-row{display:flex;align-items:baseline;gap:2px;font-family:'Unbounded',sans-serif;font-size:clamp(24px,2.8vw,38px);letter-spacing:-1px}
-.home-brand-joy{color:#e52b21;font-weight:700}
-.home-brand-builder{color:#0f1117;font-weight:700}
-.home-hero-title{font:700 clamp(22px,2.4vw,32px)/1.2 'Noto Sans SC';letter-spacing:-1.5px;color:#0f1117;margin:0}
+.home-hero-row{width:min(1100px,92vw);display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;background:#fff;border:1px solid #e4e7ec;border-radius:18px;padding:32px 40px 0 40px;box-shadow:0 8px 32px #26374a08;min-height:160px;overflow:hidden}
+.home-hero-text{display:flex;flex-direction:column;gap:10px;padding-bottom:32px}
+.home-brand-row{display:flex;align-items:baseline;gap:4px;font-size:clamp(26px,3vw,40px);letter-spacing:-1px;font-weight:700}
+.home-brand-joy{color:#e52b21}
+.home-brand-builder{color:#0f1117}
+.home-hero-title{font:700 clamp(22px,2.4vw,32px)/1.2 'Noto Sans SC';letter-spacing:-1px;color:#0f1117;margin:0}
 
 /* Mascot area */
-.home-mascot{position:relative;width:200px;height:140px;flex:0 0 auto}
-.home-mascot-figure{position:relative;display:flex;align-items:flex-end;justify-content:flex-end;height:100%;gap:12px}
+.home-mascot{flex:0 0 auto;display:flex;align-items:flex-end}
+.home-mascot-img{height:210px;width:auto;display:block;object-fit:contain}
 .mascot-body{display:flex;flex-direction:column;align-items:center;gap:0}
 .mascot-head{width:72px;height:60px;border-radius:50% 50% 44% 44%;background:#f5e6c8;border:3px solid #e8d0a8;position:relative;display:flex;align-items:center;justify-content:center;gap:12px}
 .mascot-eye{width:14px;height:14px;border-radius:50%;background:#1a1d23;position:relative}
@@ -148,6 +146,21 @@ body{min-width:1100px;background:#f5f6f8}
 .composer-actions>div{display:flex;align-items:center;gap:8px}
 .composer-actions span{font-size:9px;color:#96978f;display:flex;align-items:center;gap:5px;margin-left:7px}
 .composer-actions span svg{color:#789a51}
+
+/* Reference image previews */
+.composer-ref-images{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 4px}
+.ref-img-chip{display:flex;align-items:center;gap:6px;border:1px solid #e1e5ea;border-radius:8px;padding:4px 8px 4px 4px;background:#f8f9fb;max-width:180px}
+.ref-img-chip img{width:32px;height:32px;object-fit:cover;border-radius:5px;flex-shrink:0}
+.ref-img-chip span{font-size:9px;color:#4a5060;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-img-chip button{width:16px;height:16px;border:0;background:transparent;border-radius:4px;cursor:pointer;color:#9ba3ae;display:grid;place-items:center;flex-shrink:0}
+.ref-img-chip button:hover{background:#f0f2f5;color:#e52b21}
+
+/* Inspector warning score */
+.ps-insp-score.warning{background:#fff8f0;border-color:#f0d090}
+.ps-insp-score.warning svg{color:#c07020}
+.ps-insp-score.warning strong{color:#5a3010}
+.ps-insp-score.warning small{color:#8b5e30}
+.ps-rule-dot.failed{background:#fdeaea;color:#8b2020}
 
 /* Task type tabs */
 .task-tabs{display:grid;grid-template-columns:repeat(4,1fr) auto;padding:18px 0 0;gap:12px}
@@ -587,9 +600,9 @@ body{min-width:1100px;background:#f5f6f8}
 .hcp-tp-more:hover{background:#edf0f4;color:#1a1d23}
 
 /* ============================================================
-   Production Studio — chat + canvas split view
+   Production Studio — chat + canvas + inspector three-column
    ============================================================ */
-.production-studio{display:grid;grid-template-columns:520px 1fr;height:100vh;background:#f5f6f8;overflow:hidden}
+.production-studio{display:grid;grid-template-columns:420px 1fr 300px;height:100vh;background:#f5f6f8;overflow:hidden}
 
 /* ── Chat panel ─────────────────────────────────────────── */
 .ps-chat{display:flex;flex-direction:column;height:100vh;background:#fff;border-right:1px solid #e4e7ec}
@@ -627,17 +640,101 @@ body{min-width:1100px;background:#f5f6f8}
 .ps-tasklist-header>span:first-child{flex:1}
 .ps-tasklist-count{font:600 9px 'DM Mono';background:#e8f5e4;color:#2a7a47;padding:2px 6px;border-radius:4px}
 
-.ps-input-bar{border-top:1px solid #f0f2f5;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;background:#fff}
-.ps-input-tools{display:flex;align-items:center;gap:6px}
+/* Agent header */
+.ps-agent-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ps-agent-icon{width:22px;height:22px;border-radius:6px;background:#f0f4ff;display:grid;place-items:center;color:#4a6aef;flex-shrink:0}
+.ps-agent-name{font:600 11px 'Noto Sans SC';color:#1a1d23}
+.ps-agent-status{margin-left:auto;display:flex;align-items:center;gap:4px;font:500 9px 'DM Mono';color:#3a7d44}
+.ps-agent-status svg{color:#3a7d44}
+
+/* Touchpoint plan list */
+.ps-touchpoint-plan{border:1px solid #e8edf0;border-radius:10px;overflow:hidden;margin-top:6px}
+.ps-plan-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f6f8fa;border-bottom:1px solid #e8edf0;font-size:10px;color:#4a5060;font-weight:600}
+.ps-plan-header em{font-style:normal;font:400 9px 'DM Mono';color:#9ba3ae}
+.ps-tp-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #f0f2f5;transition:background .15s}
+.ps-tp-row:last-child{border-bottom:0}
+.ps-tp-running{background:#fafcff}
+.ps-tp-done{background:#f8fdf9}
+.ps-tp-icon{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.ps-tp-pending .ps-tp-icon{background:#f0f2f5}
+.ps-tp-running .ps-tp-icon{background:#e8f0ff}
+.ps-tp-done .ps-tp-icon{background:#e4f4e8;color:#3a7d44}
+.ps-tp-dot{width:6px;height:6px;border-radius:50%;background:#c8cdd3}
+.ps-tp-spinner{width:10px;height:10px;border:2px solid #c8d8ff;border-top-color:#4a6aef;border-radius:50%;animation:spin 0.8s linear infinite}
+.ps-tp-label{flex:1;font-size:10px;color:#1a1d23;font-weight:500}
+.ps-tp-meta{font:400 9px 'DM Mono';color:#9ba3ae;white-space:nowrap}
+.ps-tp-badge{font:500 8px 'DM Mono';padding:2px 6px;border-radius:4px;white-space:nowrap}
+.ps-tp-badge-pending{background:#f0f2f5;color:#9ba3ae}
+.ps-tp-badge-running{background:#e8f0ff;color:#4a6aef;animation:pulse-text 1.2s ease infinite}
+.ps-tp-badge-done{background:#e4f4e8;color:#2a7a47}
+.ps-tp-badge-blocked{background:#fff3e0;color:#c07020}
+.ps-tp-blocked .ps-tp-icon{background:#fff3e0;color:#c07020}
+
+/* Blocked approval card */
+.ps-block-card{background:#fffaf0;border:1px solid #f0d090;border-radius:10px;padding:12px 14px;margin-top:8px;animation:slide-in .25s ease}
+.ps-block-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:#c07020}
+.ps-block-header strong{font-size:11px;font-weight:700}
+.ps-block-header svg{flex-shrink:0}
+.ps-block-card p{font-size:10px;color:#6b5020;line-height:1.6;margin:0 0 10px}
+.ps-block-actions{display:flex;gap:8px}
+.ps-block-dismiss{flex:1;padding:7px;border:1px solid #e0c888;border-radius:7px;background:#fff;color:#8b6820;font-size:10px;cursor:pointer}
+.ps-block-approve{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px;border:0;border-radius:7px;background:#c07020;color:#fff;font:600 10px 'Noto Sans SC';cursor:pointer}
+.ps-block-approve:hover{background:#a05a10}
+
+/* Distribution complete banner */
+.ps-dist-complete{display:flex;align-items:center;gap:8px;background:#e8f7ee;border:1px solid #a8ddb8;border-radius:10px;padding:10px 14px;margin-top:8px;animation:slide-in .3s ease}
+.ps-dist-complete svg{color:#3a7d44;flex-shrink:0}
+.ps-dist-complete span{flex:1;font-size:10px;color:#1a4a2a;font-weight:600}
+.ps-dist-complete button{font-size:10px;color:#3a7d44;font-weight:700;border:0;background:transparent;cursor:pointer;white-space:nowrap}
+.ps-dist-complete button:hover{text-decoration:underline}
+
+/* Inspector dist status */
+.ps-insp-dist-status{display:flex;align-items:center;gap:7px;padding:10px 12px;background:#f0faf3;border:1px solid #b8e6c4;border-radius:8px;font-size:11px;color:#2a7a47;font-weight:600}
+
+/* Agent operation log */
+.ps-agent-log-row{display:flex;align-items:flex-start;gap:7px;font-size:10px;padding:4px 0;color:#4a5060;animation:phraseIn .2s ease}
+.ps-agent-log-row svg{flex-shrink:0;margin-top:2px;color:#9ba3ae}
+.ps-log-done svg{color:#3a7d44}
+.ps-log-done{color:#2a7a47}
+.ps-log-block svg{color:#c07020}
+.ps-log-block{color:#8b5e20}
+
+/* Agent autopilot banner */
+.ps-agent-autopilot{display:flex;align-items:center;gap:6px;background:#f0f4ff;border:1px solid #c0ccff;border-radius:8px;padding:8px 10px;font-size:10px;color:#3a50c0;margin-top:6px;animation:slide-in .25s ease}
+.ps-agent-autopilot svg{flex-shrink:0}
+
+/* Tab agent focus pulse */
+.ps-asset-tab.agent-focus{box-shadow:0 0 0 2px #4a6aef;border-color:#4a6aef;animation:agent-focus-pulse 1s ease infinite}
+@keyframes agent-focus-pulse{0%,100%{box-shadow:0 0 0 2px #4a6aef}50%{box-shadow:0 0 0 4px #c0ccff}}
+
+/* Button agent clicking */
+.ps-btn-proceed-sm.agent-clicking,
+.ps-btn-all-done.agent-clicking{animation:agent-click-glow .7s ease infinite;outline:2px solid #4a6aef;outline-offset:2px}
+@keyframes agent-click-glow{0%,100%{box-shadow:0 0 0 0 #4a6aef40}50%{box-shadow:0 0 0 6px #4a6aef10}}
+
+/* Auto mode toggle */
+.ps-auto-toggle{padding:12px 18px;border-top:1px solid #f0f2f5;display:flex;flex-direction:column;gap:4px;margin-top:auto}
+.ps-auto-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid #e4e7ec;background:#f8f9fb;color:#4a5060;font-size:10px;cursor:pointer;font-weight:600;width:100%;justify-content:center}
+.ps-auto-btn.on{background:#f0f4ff;border-color:#c0ccff;color:#3a50c0}
+.ps-auto-btn.on svg{color:#4a6aef}
+.ps-auto-toggle small{font-size:9px;color:#9ba3ae;text-align:center}
+@keyframes pulse-text{0%,100%{opacity:1}50%{opacity:.6}}
+
+
+.ps-input-bar{border-top:1px solid #f0f2f5;padding:12px 14px;display:flex;align-items:flex-end;gap:8px;background:#fff}
+.ps-input-tools{display:flex;align-items:center;gap:6px;flex-shrink:0;padding-bottom:2px}
+.ps-input-right{display:flex;align-items:center;gap:4px;flex-shrink:0;padding-bottom:2px}
+.ps-input-field{flex:1;resize:none;border:1px solid #e8eaed;border-radius:10px;padding:10px 14px;font:400 12px 'Noto Sans SC',sans-serif;color:#1a1d23;background:#f9fafb;outline:none;line-height:1.6;min-height:42px;max-height:140px;overflow-y:auto}
+.ps-input-field::placeholder{color:#b8bbc2}
+.ps-input-field:focus{border-color:#c0c8d4;background:#fff;box-shadow:0 0 0 3px #f0f4f8}
 .ps-tool-btn{width:30px;height:30px;border:0;background:transparent;border-radius:7px;cursor:pointer;color:#8b929c;font-size:13px;display:grid;place-items:center}
 .ps-tool-btn:hover{background:#f4f5f7}
 .ps-ask-btn{display:flex;align-items:center;gap:3px;padding:5px 9px;border:1px solid #e4e7ec;border-radius:7px;background:#fff;color:#4a5060;font-size:9px;cursor:pointer}
-.ps-input-right{display:flex;align-items:center;gap:6px}
-.ps-custom-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid #e4e7ec;border-radius:7px;background:#fff5e8;color:#c07020;font-size:9px;cursor:pointer;font-weight:600}
+.ps-custom-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid #f0d8a8;border-radius:7px;background:#fff8ec;color:#c07020;font-size:9px;cursor:pointer;font-weight:600}
 .ps-send-circle{width:34px;height:34px;border:0;border-radius:50%;background:#c8cdd3;color:#fff;display:grid;place-items:center;cursor:not-allowed}
 
 /* ── Canvas panel ────────────────────────────────────────── */
-.ps-canvas{display:flex;flex-direction:column;height:100vh;background:#f0f1f4;position:relative}
+.ps-canvas{display:flex;flex-direction:column;height:100vh;background:#f0f1f4;border-right:1px solid #e4e7ec}
 
 .ps-canvas-toolbar{display:flex;align-items:center;gap:2px;padding:8px 14px;background:#fff;border-bottom:1px solid #e4e7ec;flex-shrink:0}
 .ps-canvas-toolbar button{display:flex;align-items:center;gap:5px;padding:6px 10px;border:0;background:transparent;border-radius:7px;color:#4a5060;font-size:10px;cursor:pointer;white-space:nowrap}
@@ -655,14 +752,21 @@ body{min-width:1100px;background:#f5f6f8}
 
 .ps-canvas-area{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:28px;background-image:radial-gradient(#d8dce4 1px,transparent 1px);background-size:22px 22px}
 
+.ps-canvas-zoom-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border-top:1px solid #e4e7ec;font:500 9px 'DM Mono';color:#8b929c;flex-shrink:0}
+.ps-zoom-tools{display:flex;gap:4px}
+.ps-zoom-tools button{width:26px;height:26px;border:1px solid #e4e7ec;background:#f8f9fb;border-radius:5px;font-size:12px;cursor:pointer;color:#6b7280;display:grid;place-items:center}
+
 /* Poster stage */
 .ps-poster-stage{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ps-poster-label{font:500 9px 'DM Mono';color:#8b929c;letter-spacing:.5px;display:flex;align-items:center;gap:5px}
 .ps-poster-label::before{content:'⊕';color:#e5a020}
 .ps-poster-frame{border:2px solid #e52b21;border-radius:4px;overflow:hidden;box-shadow:0 16px 48px #26374a18}
+.ps-poster-img-wrap{width:260px;aspect-ratio:3/4;position:relative;border-radius:4px;overflow:hidden;flex-shrink:0}
+.ps-poster-real-img{width:100%;height:100%;object-fit:cover;display:block}
+.ps-poster-img-wrap .ps-poster-lock{position:absolute;bottom:10px;left:12px;font:500 7px 'DM Mono';color:rgba(255,255,255,.75);z-index:2;background:rgba(0,0,0,.3);padding:3px 6px;border-radius:3px}
 
 /* Poster card */
-.ps-poster{width:280px;aspect-ratio:3/4;position:relative;display:flex;flex-direction:column;padding:18px 16px;overflow:hidden;color:#fff;flex-shrink:0}
+.ps-poster{width:260px;aspect-ratio:3/4;position:relative;display:flex;flex-direction:column;padding:18px 16px;overflow:hidden;color:#fff;flex-shrink:0}
 .ps-poster-noise{position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");pointer-events:none;opacity:.6}
 .ps-poster-eyebrow{font:500 8px 'DM Mono';letter-spacing:2px;color:#ffffffbb;position:relative;z-index:1}
 .ps-poster-title{font:700 36px 'Unbounded';letter-spacing:-2px;margin:8px 0 4px;position:relative;z-index:1;line-height:1}
@@ -680,24 +784,65 @@ body{min-width:1100px;background:#f5f6f8}
 .ps-poster-lock{position:absolute;bottom:10px;left:12px;font:500 7px 'DM Mono';color:rgba(255,255,255,.55);z-index:2}
 
 /* Generating state */
-.ps-poster-generating{width:280px;aspect-ratio:3/4;background:linear-gradient(155deg,#1a2a3a,#0a1420);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border-radius:4px}
-.ps-gen-spinner{width:32px;height:32px;border:3px solid #2a3a4a;border-top-color:#5a9ed8;border-radius:50%;animation:spin 1s linear infinite}
-.ps-poster-generating>span{font-size:11px;color:#9ab8d0}
-.ps-poster-generating>small{font:400 9px 'DM Mono';color:#5a7a90}
+.ps-poster-generating{width:260px;aspect-ratio:3/4;background:linear-gradient(155deg,#1a2a3a,#0a1420);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:4px;padding:24px}
+.ps-gen-progress-ring{position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+.ps-ring-svg{width:56px;height:56px;position:absolute;inset:0}
+.ps-ring-pct{font:700 12px 'DM Mono';color:#5a9ed8;position:relative;z-index:1}
+.ps-poster-generating>span{font-size:11px;color:#9ab8d0;text-align:center}
+.ps-poster-generating>small{font:400 9px 'DM Mono';color:#5a7a90;text-align:center;line-height:1.5}
 
-/* Review bar */
-.ps-review-bar{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#fff;border-top:1px solid #e4e7ec;flex-shrink:0}
-.ps-review-left{flex:1;font-size:10px;color:#4a5060}
-.ps-review-approved{display:flex;align-items:center;gap:6px;color:#2a7a47;font-weight:600}
-.ps-review-pending{color:#8b5e16;font-weight:500}
-.ps-review-actions{display:flex;gap:8px}
-.ps-btn-reject{display:flex;align-items:center;gap:5px;padding:8px 14px;border:1px solid #e8c8c8;border-radius:8px;background:#fdeaea;color:#8b2020;font-size:10px;cursor:pointer}
-.ps-btn-approve{display:flex;align-items:center;gap:5px;padding:8px 14px;border:0;border-radius:8px;background:#1d2228;color:#fff;font-size:10px;cursor:pointer;font-weight:600}
-.ps-btn-approve:hover{background:#e52b21}
-.ps-btn-proceed{padding:8px 18px;border:0;border-radius:8px;background:linear-gradient(90deg,#f05a28,#e52b21);color:#fff;font:700 11px 'Noto Sans SC';cursor:pointer}
-.ps-canvas-zoom{margin-left:auto;font:500 9px 'DM Mono';color:#8b929c;border:1px solid #e4e7ec;padding:4px 8px;border-radius:5px;cursor:pointer}
 .ps-back-btn{width:30px;height:30px;border:0;background:transparent;border-radius:7px;cursor:pointer;color:#6b7280;display:grid;place-items:center;flex-shrink:0}
 .ps-back-btn:hover{background:#f4f5f7;color:#1a1d23}
+
+/* ── Right inspector panel ───────────────────────────────── */
+.ps-inspector-panel{display:flex;flex-direction:column;height:100vh;background:#fff;overflow-y:auto;scrollbar-width:thin}
+
+.ps-insp-progress-section{padding:16px 18px;border-bottom:1px solid #f0f2f5}
+.ps-insp-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ps-insp-progress-row span{font-size:10px;color:#6b7280}
+.ps-insp-progress-row strong{font:700 13px 'DM Mono';color:#1a1d23}
+.ps-insp-progress-track{height:6px;background:#edf0f4;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.ps-insp-progress-fill{height:100%;background:linear-gradient(90deg,#3a7d44,#5cba6a);border-radius:3px;transition:width .5s ease}
+.ps-insp-progress-section small{font:400 9px 'DM Mono';color:#9ba3ae}
+
+.ps-insp-section{padding:14px 18px;border-bottom:1px solid #f0f2f5}
+.ps-insp-section-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:10px;color:#4a5060;font-weight:600}
+.ps-insp-section-header small{font-weight:400;color:#9ba3ae;margin-left:auto}
+.ps-insp-section-header svg{color:#3a7d44}
+
+.ps-insp-score{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;background:#f0faf3;border:1px solid #b8e6c4;margin-bottom:10px}
+.ps-insp-score svg{color:#3a7d44;flex-shrink:0}
+.ps-insp-score div{display:grid;gap:2px}
+.ps-insp-score strong{font-size:11px;color:#1a4a2a}
+.ps-insp-score small{font-size:9px;color:#4a8a5a}
+
+.ps-rule-list{display:grid;gap:6px}
+.ps-rule-row{display:flex;align-items:center;gap:8px}
+.ps-rule-dot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.ps-rule-dot.passed{background:#e8f5e4;color:#3a7d44}
+.ps-rule-dot.failed{background:#fdeaea;color:#8b2020}
+.ps-rule-body{flex:1;display:grid;gap:1px}
+.ps-rule-body strong{font-size:10px;color:#1a1d23}
+.ps-rule-body small{font:400 8px 'DM Mono';color:#9ba3ae}
+.ps-rule-lock{display:flex;align-items:center;gap:3px;font:500 8px 'DM Mono';color:#9ba3ae;flex-shrink:0}
+
+.ps-insp-ctr{font:700 11px 'DM Mono';color:#3a7d44;margin-left:auto}
+.ps-insp-strategy{font-size:10px;color:#4a5060;font-weight:600;margin:0 0 4px}
+.ps-insp-rationale{font-size:10px;color:#6b7280;line-height:1.6;margin:0}
+
+.ps-insp-meta{padding:14px 18px;border-bottom:1px solid #f0f2f5;display:grid;gap:6px;margin:0}
+.ps-insp-meta div{display:flex;justify-content:space-between}
+.ps-insp-meta dt{font-size:9px;color:#9ba3ae}
+.ps-insp-meta dd{font-size:9px;color:#3c4349;font-weight:600;margin:0}
+
+.ps-insp-actions{padding:14px 18px;display:grid;gap:8px}
+.ps-insp-approved{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#3a7d44;padding:10px 0}
+.ps-btn-reject{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border:1px solid #e8c8c8;border-radius:8px;background:#fdeaea;color:#8b2020;font-size:10px;cursor:pointer;width:100%}
+.ps-btn-approve{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border:1px solid #e4e7ec;border-radius:8px;background:#f8f9fb;color:#1d2228;font-size:10px;cursor:pointer;font-weight:600;width:100%}
+.ps-btn-approve:hover{background:#1d2228;color:#fff}
+.ps-btn-proceed-sm{display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border:0;border-radius:8px;background:#e52b21;color:#fff;font:700 11px 'Noto Sans SC';cursor:pointer;width:100%}
+.ps-btn-proceed-sm:hover{background:#c82010}
+.ps-btn-all-done{padding:10px;border:0;border-radius:8px;background:linear-gradient(90deg,#f05a28,#e52b21);color:#fff;font:700 11px 'Noto Sans SC';cursor:pointer;width:100%}
 
 /* ── Live Metrics ─────────────────────────────────────── */
 .live-metrics-strip{background:#fff;border:1px solid #e5e4dc;border-radius:13px;padding:14px 18px;margin:20px 0}

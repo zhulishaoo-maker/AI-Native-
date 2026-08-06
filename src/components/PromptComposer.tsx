@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { ArrowUp, ChevronDown, ImagePlus, Layers3, Sparkles } from 'lucide-react'
+import { ArrowUp, ChevronDown, ImagePlus, Layers3, Sparkles, X } from 'lucide-react'
 import type { ComposerState, PromptCopy } from '../domain/generationBrief'
 import { filterSlotOptions, moveSlotHighlight, resolveSlotValue } from '../domain/editableSlot'
 
@@ -123,8 +123,28 @@ function EditableText({ field, value, onChange }: { field: keyof PromptCopy; val
 export function PromptComposer({ value, onChange, onSubmit }: Props) {
   const set = (field: keyof ComposerState, next: string) => onChange({ ...value, [field]: next })
   const setCopy = (field: keyof PromptCopy, next: string) => onChange({ ...value, promptCopy: { ...value.promptCopy, [field]: next } })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [refImages, setRefImages] = useState<Array<{ id: string; preview: string; name: string }>>([])
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const preview = ev.target?.result as string
+        setRefImages(prev => [...prev, { id: `${Date.now()}-${file.name}`, preview, name: file.name }])
+      }
+      reader.readAsDataURL(file)
+    })
+    // reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeImage = (id: string) => setRefImages(prev => prev.filter(img => img.id !== id))
+
   return (
     <section className="prompt-composer" aria-label="生成要求">
+      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
       <div className="composer-edit-hint"><span>整段文字可编辑</span><small>点击普通文字即可改写，灰色参数可选择</small></div>
       <div className="composer-sentence">
         <EditableText field="prefix" value={value.promptCopy.prefix} onChange={(next) => setCopy('prefix', next)} /><Slot field="campaign" value={value.campaign} onChange={(next) => set('campaign', next)} />
@@ -138,12 +158,23 @@ export function PromptComposer({ value, onChange, onSubmit }: Props) {
       </div>
       <div className="composer-actions">
         <div>
-          <button><ImagePlus size={16} />上传参考图</button>
+          <button onClick={() => fileInputRef.current?.click()}><ImagePlus size={16} />上传参考图</button>
           <button><Layers3 size={16} />页面大纲</button>
           <span><Sparkles size={13} />将固定生成 4 个候选方案</span>
         </div>
         <button className="send-button" onClick={onSubmit} aria-label="开始生成"><ArrowUp size={21} /></button>
       </div>
+      {refImages.length > 0 && (
+        <div className="composer-ref-images">
+          {refImages.map(img => (
+            <div key={img.id} className="ref-img-chip">
+              <img src={img.preview} alt={img.name} />
+              <span>{img.name.length > 12 ? img.name.slice(0, 12) + '…' : img.name}</span>
+              <button onClick={() => removeImage(img.id)} aria-label="移除参考图"><X size={11} /></button>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

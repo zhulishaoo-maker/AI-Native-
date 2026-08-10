@@ -75,16 +75,20 @@ export async function composeOverlays(
 
 function drawFallbackBrandOverlay(ctx: CanvasRenderingContext2D, W: number, H: number) {
   const barH = Math.round(H * 0.08)
-  ctx.fillStyle = '#E1251B'  // 京东红
+  // 京喜品牌红渐变（从左到右 #ed0038 → #ff1a53）
+  const grad = ctx.createLinearGradient(0, 0, W, 0)
+  grad.addColorStop(0, '#ed0038')
+  grad.addColorStop(1, '#ff1a53')
+  ctx.fillStyle = grad
   ctx.fillRect(0, 0, W, barH)
 
-  // 白色 "京东" 文字
+  // 白色「京喜」文字
   ctx.fillStyle = '#ffffff'
   const fontSize = Math.round(barH * 0.52)
   ctx.font = `700 ${fontSize}px "Noto Sans SC", sans-serif`
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'left'
-  ctx.fillText('京东 618', Math.round(W * 0.04), barH / 2)
+  ctx.fillText('京喜', Math.round(W * 0.04), barH / 2)
 
   // 右侧活动名
   ctx.textAlign = 'right'

@@ -17,7 +17,7 @@ const options = {
   searchOverlay: ['京东搜索框压板', '京东搜索框压板 · 浅色', '不使用搜索框压板'],
   style: ['清透冰感', '高饱和未来感', '极简高级', '热烈大促'],
   ratio: ['3:4 · 750×1000', '16:9 · 1920×1080', '1:1 · 1000×1000', '会场首屏 · 750×920'],
-} satisfies Record<Exclude<keyof ComposerState, 'taskType' | 'promptCopy'>, string[]>
+} satisfies Record<Exclude<keyof ComposerState, 'taskType' | 'promptCopy' | 'referenceImages'>, string[]>
 
 const labels: Record<keyof typeof options, string> = {
   campaign: '活动主题', category: '主推品类', benefit: '核心权益', brandOverlay: '品牌压板',

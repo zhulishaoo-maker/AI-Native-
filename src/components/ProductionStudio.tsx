@@ -29,12 +29,14 @@ type DistChannel = {
 type AgentMsg = { id: string; text: string; type: 'action' | 'done' | 'block' }
 
 // 每个 ASSET 对应一个触点规范，带真实尺寸和专属 prompt 要求
+const BRAND_COLOR_CONSTRAINT = '背景使用京喜品牌红色渐变（#ed0038至#ff1a53至#ff4b78，从下往上），绝对不能使用紫色、蓝色、绿色等非品牌色背景'
+
 const ASSET_SPECS = [
   {
     touchpoint: '开屏',
-    sizeKey: '750×1624',   // 对应 JD_CHANNEL_SPECS 键
+    sizeKey: '750×1624',
     ratioKey: '9:21.6',
-    prompt: '京喜开屏广告，竖屏9:21比例，750x1624像素，全屏沉浸式视觉冲击，顶部留品牌压板安全区，底部留搜索框安全区，中央大面积视觉主体',
+    prompt: `京喜开屏广告，竖屏9:21比例，750x1624像素，全屏沉浸式视觉冲击，${BRAND_COLOR_CONSTRAINT}，顶部留品牌压板安全区，底部留搜索框安全区，中央大面积视觉主体，商品置于画面左侧偏下，文案在右侧`,
     brandOverlay: true,
     searchBar: true,
   },
@@ -42,7 +44,7 @@ const ASSET_SPECS = [
     touchpoint: 'Banner / 资源位',
     sizeKey: '1920×1080',
     ratioKey: '16:9',
-    prompt: '京喜Banner广告横版，16:9比例，1920x1080像素，横版构图，左侧产品主体右侧权益文案，品牌压板在左上角',
+    prompt: `京喜Banner广告横版，16:9比例，1920x1080像素，横版构图，${BRAND_COLOR_CONSTRAINT}，左侧产品主体右侧权益文案，品牌压板在左上角`,
     brandOverlay: true,
     searchBar: false,
   },
@@ -50,7 +52,7 @@ const ASSET_SPECS = [
     touchpoint: '营销海报',
     sizeKey: '750×1000',
     ratioKey: '3:4',
-    prompt: '京喜营销海报，3:4竖版比例，750x1000像素，营销海报构图，主视觉产品居中，权益信息突出，品牌感强',
+    prompt: `京喜营销海报，3:4竖版比例，750x1000像素，${BRAND_COLOR_CONSTRAINT}，营销海报构图，主视觉产品居中偏下，权益信息突出显示在上方，品牌感强`,
     brandOverlay: true,
     searchBar: true,
   },
@@ -84,7 +86,14 @@ const DIST_CHANNELS: DistChannel[] = [
   { id: 'live',      name: '直播间挂载',          icon: '直', status: 'pending', autoMs: 0,    blockReason: '直播间上线影响实时流量，需运营负责人确认' },
 ]
 
-function PosterPlaceholder({ asset, generating }: { asset: Asset; generating: boolean }) {
+function PosterPlaceholder({ asset, generating, spec }: { asset: Asset; generating: boolean; spec?: typeof ASSET_SPECS[number] }) {
+  // Compute aspect ratio from sizeKey so the preview frame matches the actual output dimensions
+  const aspectRatio = (() => {
+    if (!spec?.sizeKey) return '3 / 4'
+    const m = spec.sizeKey.match(/(\d+)[×x](\d+)/i)
+    if (!m) return '3 / 4'
+    return `${m[1]} / ${m[2]}`
+  })()
   if (generating) {
     const p = asset.progress ?? 0
     const label = p < 30 ? '正在解析创意目标…' : p < 60 ? '正在生成底图…' : p < 90 ? '正在校验规则…' : '即将完成…'
@@ -108,7 +117,7 @@ function PosterPlaceholder({ asset, generating }: { asset: Asset; generating: bo
   }
   if (asset.imageUrl) {
     return (
-      <div className="ps-poster-img-wrap">
+      <div className="ps-poster-img-wrap" style={{ aspectRatio }}>
         <img src={asset.imageUrl} alt={asset.category} className="ps-poster-real-img" />
         <div className="ps-poster-lock">🔒 品牌压板已锁定</div>
       </div>
@@ -203,7 +212,7 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
           const basePrompt = brief
             ? `${spec.prompt}，活动主题「${brief.campaign}」，主推${brief.category}，核心权益「${brief.benefit}」，视觉风格${brief.style}${refImageUrl ? '，严格参照参考图的色彩构图风格' : ''}`
             : `${spec.prompt}，清凉季活动，满300减50权益，清透冰感风格`
-          const result = await generateImage(basePrompt, undefined, abortController.signal, refImageUrl)
+          const result = await generateImage(basePrompt, spec.sizeKey, abortController.signal, refImageUrl)
           window.clearInterval(tick)
           if (cancelled) return
           if (!result.ok) console.error(`[image gen] asset ${i} (${spec.touchpoint}) failed:`, result.error)
@@ -544,10 +553,10 @@ export function ProductionStudio({ brief, onComplete, onBack }: { goal: string; 
         <div className="ps-canvas-area">
           {currentTaskDone
             ? <div className="ps-poster-stage">
-                <div className="ps-poster-label">A premium cosmetics · 1536×2048</div>
-                <div className="ps-poster-frame"><PosterPlaceholder asset={current} generating={false} /></div>
+                <div className="ps-poster-label">{ASSET_SPECS[selectedIdx]?.touchpoint} · {ASSET_SPECS[selectedIdx]?.sizeKey}</div>
+                <div className="ps-poster-frame"><PosterPlaceholder asset={current} generating={false} spec={ASSET_SPECS[selectedIdx]} /></div>
               </div>
-            : <PosterPlaceholder asset={current} generating={true} />}
+            : <PosterPlaceholder asset={current} generating={true} spec={ASSET_SPECS[selectedIdx]} />}
         </div>
 
         <div className="ps-canvas-zoom-bar">

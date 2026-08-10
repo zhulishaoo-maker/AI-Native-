@@ -761,8 +761,8 @@ body{min-width:1100px;background:#f5f6f8}
 .ps-poster-label{font:500 9px 'DM Mono';color:#8b929c;letter-spacing:.5px;display:flex;align-items:center;gap:5px}
 .ps-poster-label::before{content:'⊕';color:#e5a020}
 .ps-poster-frame{border:2px solid #e52b21;border-radius:4px;overflow:hidden;box-shadow:0 16px 48px #26374a18}
-.ps-poster-img-wrap{width:260px;aspect-ratio:3/4;position:relative;border-radius:4px;overflow:hidden;flex-shrink:0}
-.ps-poster-real-img{width:100%;height:100%;object-fit:cover;display:block}
+.ps-poster-img-wrap{width:260px;position:relative;border-radius:4px;overflow:hidden;flex-shrink:0}
+.ps-poster-real-img{width:100%;height:100%;object-fit:contain;display:block;background:#111}
 .ps-poster-img-wrap .ps-poster-lock{position:absolute;bottom:10px;left:12px;font:500 7px 'DM Mono';color:rgba(255,255,255,.75);z-index:2;background:rgba(0,0,0,.3);padding:3px 6px;border-radius:3px}
 
 /* Poster card */

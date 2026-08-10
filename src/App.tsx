@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, AlertTriangle, Archive, ArrowLeft, ArrowUpRight, Bot, Boxes, Check, CheckCircle2, ChevronDown, ChevronRight, CircleCheck, Clock3, Code2, Eye, Folder, Gauge, GitBranch, History, LockKeyhole, PanelLeftClose, Pencil, Play, Plus, RefreshCw, RotateCcw, Send, Settings, ShieldCheck, Sparkles, UnlockKeyhole, WandSparkles, X, Zap } from 'lucide-react'
+import { Activity, AlertCircle, AlertTriangle, Archive, ArrowLeft, ArrowUpRight, Bot, Boxes, Check, CheckCircle2, ChevronDown, ChevronRight, CircleCheck, Clock3, Code2, Eye, Folder, Gauge, GitBranch, History, LockKeyhole, PanelLeftClose, Pencil, Play, Plus, RefreshCw, RotateCcw, Send, Settings, ShieldCheck, Sparkles, UnlockKeyhole, WandSparkles, X, Zap } from 'lucide-react'
 import { VenuePreview } from './components/VenuePreview'
 import { PromptComposer } from './components/PromptComposer'
 import { CampaignWorkspace } from './components/CampaignWorkspace'
@@ -14,6 +14,7 @@ import { buildGenerationBrief, defaultComposerState, taskTypes, type ComposerSta
 import { canSubmitReview, createCandidateBatch, deriveBatchProgress, failCandidate, generatingPhrases, retryCandidate, setImageUrl, transitionCandidate, updateCandidateCopy, validatingPhrases, type CandidateInsight, type CandidateStatus, type CreativeCandidate } from './domain/assetProduction'
 import { baseMetrics, detectAnomaly, tickMetrics, type DataQuality, type LiveMetrics } from './domain/campaign'
 import { generateImage } from './services/imageGeneration'
+import { publishToChannel } from './services/channelPublish'
 
 type Tab = 'brief' | 'structure' | 'rules'
 
@@ -865,12 +866,20 @@ function DataInsightsView({ assets, onBack }: { assets: ArchivedAsset[]; onBack:
   )
 }
 
-type ChannelState = { status: 'pending' | 'scheduled' | 'sent' | 'failed'; copyDraft: string; scheduleLabel: string }
+type ChannelState = {
+  status: 'pending' | 'scheduled' | 'sending' | 'sent' | 'failed'
+  copyDraft: string
+  topics: string         // 逗号分隔的话题标签，如 "#京东夏季促销, #美妆护肤"
+  scheduledAt: string    // ISO 8601 或空字符串（空 = 立即发布）
+  scheduleLabel: string
+  postId?: string
+  errorMsg?: string
+}
 
 function DistributeView({ assets, onBack }: { assets: ArchivedAsset[]; onBack: () => void }) {
   const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id ?? '')
   const [channels, setChannels] = useState<Record<string, ChannelState>>(() =>
-    Object.fromEntries(distributeChannels.map((c) => [c.id, { status: 'pending', copyDraft: '', scheduleLabel: '' }]))
+    Object.fromEntries(distributeChannels.map((c) => [c.id, { status: 'pending', copyDraft: '', topics: '', scheduledAt: '', scheduleLabel: '' }]))
   )
   const [sending, setSending] = useState<string | null>(null)
   const [activeChannel, setActiveChannel] = useState<string>(distributeChannels[0].id)
@@ -892,16 +901,37 @@ function DistributeView({ assets, onBack }: { assets: ArchivedAsset[]; onBack: (
     setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], copyDraft: aiCopy[activeChannel] ?? '' } }))
   }
 
-  const scheduleOrSend = (channelId: string) => {
+  const scheduleOrSend = async (channelId: string) => {
+    const snapshot = channels[channelId]
     setSending(channelId)
-    window.setTimeout(() => {
-      setChannels((prev) => ({ ...prev, [channelId]: { ...prev[channelId], status: 'sent', scheduleLabel: '刚刚' } }))
-      setSending(null)
-    }, 1400)
+    setChannels((prev) => ({ ...prev, [channelId]: { ...prev[channelId], status: 'sending', errorMsg: undefined } }))
+
+    const result = await publishToChannel({
+      channelId,
+      imageUrl: selectedAsset?.imageUrl ?? '',
+      copy: snapshot.copyDraft,
+      topics: snapshot.topics.split(',').map((t) => t.trim()).filter(Boolean),
+      scheduledAt: snapshot.scheduledAt || undefined,
+    })
+
+    setSending(null)
+    if (result.ok) {
+      const label = snapshot.scheduledAt
+        ? `已排期 · ${new Date(snapshot.scheduledAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`
+        : '刚刚'
+      setChannels((prev) => ({ ...prev, [channelId]: { ...prev[channelId], status: 'sent', postId: result.postId, scheduleLabel: label } }))
+    } else {
+      setChannels((prev) => ({ ...prev, [channelId]: { ...prev[channelId], status: 'failed', errorMsg: result.error } }))
+    }
   }
 
-  const statusLabel = (s: ChannelState['status']) =>
-    s === 'sent' ? '已发布' : s === 'scheduled' ? '已排期' : s === 'failed' ? '发布失败' : '待发布'
+  const statusLabel = (s: ChannelState['status']) => {
+    if (s === 'sent') return '已发布'
+    if (s === 'scheduled') return '已排期'
+    if (s === 'sending') return '发布中…'
+    if (s === 'failed') return '发布失败'
+    return '待发布'
+  }
 
   const sentCount = Object.values(channels).filter((s) => s.status === 'sent').length
 
@@ -1009,14 +1039,53 @@ function DistributeView({ assets, onBack }: { assets: ArchivedAsset[]; onBack: (
             ) : null}
           </div>
 
+          {/* Topics / hashtags */}
+          <div className="dist-topics-row">
+            <label className="dist-field-label">话题 / 标签</label>
+            <input
+              className="dist-topics-input"
+              placeholder="#京东夏季促销, #美妆护肤"
+              value={chState.topics}
+              onChange={(e) => setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], topics: e.target.value } }))}
+            />
+            <small className="dist-field-hint">多个话题用逗号分隔</small>
+          </div>
+
+          {/* Schedule time */}
+          <div className="dist-schedule-time-row">
+            <label className="dist-field-label">发布时间</label>
+            <div className="dist-schedule-time-inputs">
+              <input
+                type="datetime-local"
+                className="dist-datetime-input"
+                value={chState.scheduledAt}
+                onChange={(e) => setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], scheduledAt: e.target.value } }))}
+              />
+              {chState.scheduledAt && (
+                <button className="dist-clear-time" onClick={() => setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], scheduledAt: '' } }))}>
+                  <X size={11} />立即
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="distribute-actions">
             {chState.status === 'sent' ? (
               <div className="dist-sent-state"><Check size={15} /><span>已发布到 {ch.name}</span><small>{chState.scheduleLabel}</small></div>
+            ) : chState.status === 'failed' ? (
+              <div className="dist-error-state">
+                <AlertCircle size={13} />
+                <span>{chState.errorMsg}</span>
+                <button className="dist-retry-btn" onClick={() => scheduleOrSend(activeChannel)}>重试</button>
+              </div>
             ) : (
               <>
                 <button
                   className="dist-schedule-btn"
-                  onClick={() => setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], status: 'scheduled', scheduleLabel: '今日 20:00' } }))}
+                  onClick={() => {
+                    const t = chState.scheduledAt || (() => { const d = new Date(); d.setHours(20, 0, 0, 0); return d.toISOString().slice(0, 16) })()
+                    setChannels((prev) => ({ ...prev, [activeChannel]: { ...prev[activeChannel], status: 'scheduled', scheduledAt: t, scheduleLabel: '今日 20:00' } }))
+                  }}
                   disabled={chState.status === 'scheduled' || sending === activeChannel}
                 >
                   <Clock3 size={13} />{chState.status === 'scheduled' ? `已排期 · ${chState.scheduleLabel}` : '排期发布'}
@@ -1024,9 +1093,11 @@ function DistributeView({ assets, onBack }: { assets: ArchivedAsset[]; onBack: (
                 <button
                   className="dist-send-btn"
                   onClick={() => scheduleOrSend(activeChannel)}
-                  disabled={sending === activeChannel}
+                  disabled={sending === activeChannel || chState.status === 'sending'}
                 >
-                  {sending === activeChannel ? <><Activity size={13} />发布中…</> : <><Send size={13} />立即发布</>}
+                  {chState.status === 'sending' || sending === activeChannel
+                    ? <><Activity size={13} />发布中…</>
+                    : <><Send size={13} />{chState.scheduledAt ? '确认排期' : '立即发布'}</>}
                 </button>
               </>
             )}

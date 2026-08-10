@@ -290,6 +290,27 @@ body{min-width:1100px;background:#f5f6f8}
 .dist-sent-state small{margin-left:auto;font:400 8px 'DM Mono';opacity:.7}
 .distribute-ai-tip{display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:8px;background:#f8f9fb;font-size:8px;color:#6e7880}
 .distribute-ai-tip svg{color:#9aa8b5;flex:0 0 auto}
+/* badge states */
+.dist-badge.sending{color:#888981;background:#f0efea}
+.dist-badge.failed{color:#c0392b;background:#fdf0ee}
+/* topics row */
+.dist-topics-row{display:grid;gap:5px;padding:0 0 10px}
+.dist-field-label{font:600 8px 'DM Mono';color:#888981;letter-spacing:.5px;text-transform:uppercase}
+.dist-topics-input{border:1px solid #dfe4ea;border-radius:7px;padding:8px 10px;font-size:10px;color:#2c3349;background:#fafaf8;outline:none}
+.dist-topics-input:focus{border-color:#9eb77f;box-shadow:0 0 0 2px #9eb77f30}
+.dist-field-hint{font-size:7px;color:#aaa9a1}
+/* schedule time row */
+.dist-schedule-time-row{display:grid;gap:5px;padding:0 0 12px}
+.dist-schedule-time-inputs{display:flex;gap:7px;align-items:center}
+.dist-datetime-input{border:1px solid #dfe4ea;border-radius:7px;padding:7px 10px;font-size:10px;color:#2c3349;background:#fafaf8;outline:none;flex:1}
+.dist-datetime-input:focus{border-color:#9eb77f;box-shadow:0 0 0 2px #9eb77f30}
+.dist-clear-time{display:flex;align-items:center;gap:4px;border:1px solid #dfe4ea;background:#fff;border-radius:6px;padding:5px 8px;font-size:9px;color:#6e7880;cursor:pointer;white-space:nowrap}
+.dist-clear-time:hover{background:#f0efea}
+/* error + retry */
+.dist-error-state{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;background:#fdf0ee;color:#c0392b;font-size:9px;border:1px solid #f5c6c0}
+.dist-error-state span{flex:1}
+.dist-retry-btn{border:1px solid #c0392b;background:#fff;color:#c0392b;border-radius:6px;padding:5px 10px;font:600 9px 'Noto Sans SC';cursor:pointer}
+.dist-retry-btn:hover{background:#fdf0ee}
 
 /* ============================================================
    Campaign context banner (home page quick-create)
